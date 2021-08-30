@@ -8,5 +8,5 @@ setup(
     author_email='wanicca@gmail.com',
     url='https://github.com/wanicca/transformers_ptuning/',
     packages=['transformers_ptuning'],
-    requires=['transformers>=4.0.0']
+    requires=['transformers (>=4.0.0)']
 )
