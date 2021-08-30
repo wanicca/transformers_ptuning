@@ -117,14 +117,26 @@ class SinglePTuningWrapper(torch.nn.Module):
     
     def update_model_weight(self):
         if self.prompt_encoder:
+            if (self.original_embedding.num_embeddings < 
+                self.prompt_encoder.id_offset+self.prompt_encoder.length):
+                self.underlying_model.resize_token_embeddings(
+                    self.prompt_encoder.id_offset+self.prompt_encoder.length
+                )
             self.prompt_encoder.dump_embedding(self.orginal_embedding)
         if self.decoder_prompt_encoder:
+            if (self.decoder_original_embedding.num_embeddings < 
+                self.decoder_prompt_encoder.id_offset + 
+                self.decoder_prompt_encoder.length):
+                self.underlying_model.resize_token_embeddings(
+                    self.decoder_prompt_encoder.id_offset+
+                    self.decoder_prompt_encoder.length
+                )
             self.decoder_prompt_encoder.dump_embedding(
                 self.decoder_original_embedding)
 
     @classmethod
     def interval_prompt(cls,model,tokenizer,intervals,decoder_intervals=None,
-        special_prefix="prompt",prompt_encoder_type="lstm",
+        special_prefix="prompt",prompt_encoder_type="embedding",
         return_prompt_string=False,**kwargs):
         """
         Given intervals ,generate a wrapped model, a tokenizer, and a template function.
