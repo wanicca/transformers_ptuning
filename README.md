@@ -7,10 +7,10 @@ Clone this repo, and run `pip install .`
 
 ## Easy way to start
 
-To create a prompt like `_ _ X _ _ _ Y _` (where `_` are trainable prompt tokens, `X` and `Y` are placeholder to fill text), we can the `SinglePTuningWrapper.interval_prompt` function for convenience:
+To create a prompt like `_ _ X _ _ _ Y _` (where `_` are trainable prompt tokens, `X` and `Y` are placeholder to fill text), we can the `PTuningWrapper.interval_prompt` function for convenience:
 
 ```python
-from transformers_ptuning import SinglePTuningWrapper
+from transformers_ptuning import PTuningWrapper
 
 model = transformers.BertModel.from_pretrained("bert-base-uncased")
 tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
@@ -18,7 +18,7 @@ tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
 for param in model.parameters():
     param.requires_grad = False 
 #get the wrapped model
-wrapped_model,prompt_func = SinglePTuningWrapper.interval_prompt(
+wrapped_model,prompt_func = PTuningWrapper.interval_prompt(
     model,tokenizer,intervals=(2,3,1)
 )
 #input example
@@ -35,7 +35,7 @@ Given the text content for placeholders, the `prompt_func` function can fill the
 The prompt encoder provides the embeddings of prompt tokens. The default prompt encoder is based on the vanilla `torch.nn.Embedding`. As paper ``GPT understands, too'' suggests, the prompt embeddings can be obtained from a lite neural network (e.g. LSTM) during training. So you can change the prompt encoder type.
 
 ```python
-wrapped_model,prompt_func = SinglePTuningWrapper.interval_prompt(
+wrapped_model,prompt_func = PTuningWrapper.interval_prompt(
     model,tokenizer,intervals=(2,3,1),prompt_encoder_type="lstm"
 )
 ```
@@ -51,7 +51,7 @@ model = transformers.T5ForConditionalGeneration.from_pretrained("t5-small")
 tokenizer = transformers.T5Tokenizer.from_pretrained("t5-small")
 for param in model.parameters():
     param.requires_grad = False 
-wrapped_model,prompt_func = SinglePTuningWrapper.interval_prompt(
+wrapped_model,prompt_func = PTuningWrapper.interval_prompt(
     model,tokenizer,intervals=(0,0),decoder_intervals=(1,2)
 )
 input_text, target_text = prompt_func("piece one","piece two")
@@ -70,10 +70,10 @@ out = wrapped_model(**tokenized)
 The wrapper is only for one prompt. However, you can wrap the model in multiple times to get multiple wrappers, each for different prompt. **Be sure** to set different `special_prefix` so that the prompt tokens won't be duplicated.
 
 ```python
-wrapped_model_A,prompt_func_A = SinglePTuningWrapper.interval_prompt(
+wrapped_model_A,prompt_func_A = PTuningWrapper.interval_prompt(
     model,tokenizer,intervals=(2,3),special_prefix="promptA"
 )
-wrapped_model_B,prompt_func_B = SinglePTuningWrapper.interval_prompt(
+wrapped_model_B,prompt_func_B = PTuningWrapper.interval_prompt(
     model,tokenizer,intervals=(2,3),special_prefix="promptB"
 )
 ```
@@ -86,10 +86,17 @@ You may want to add the prompt token embeddings into the original model after tr
 model = wrapped_model.update_model_weight()
 ```
 
+**Caution:** If you use the original output head of the model to get output, be sure that updating embedding weights may also influence the output head, which means it may output prompt tokens. To avoid that, a forward hook should be applied to the output layer so that the logits are trimmed.
+
+```python
+original_vocab_size = ... #
+model.get_output_embeddings().register_forward_hook(lambda m,i,o:o[:,:,:original_vocab_size])
+```
+
 ### More details
 
 Please refer to docstring for more details.
 
-## Reference
+## References
 
 [Official Repo for ``GPT understands, too''](https://github.com/THUDM/P-tuning)
