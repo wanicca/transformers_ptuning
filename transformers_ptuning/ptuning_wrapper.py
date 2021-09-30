@@ -129,6 +129,8 @@ class PTuningWrapper(torch.nn.Module):
                 self.underlying_model.resize_token_embeddings(
                     self.prompt_encoder.id_offset+self.prompt_encoder.length
                 )
+                #the original embedding module might be changed into new one
+                self.original_embedding = self.underlying_model.get_input_embeddings()
             self.prompt_encoder.dump_embedding(self.original_embedding.weight)
         if self.decoder_prompt_encoder:
             if (self.decoder_original_embedding.num_embeddings < 
@@ -138,6 +140,8 @@ class PTuningWrapper(torch.nn.Module):
                     self.decoder_prompt_encoder.id_offset+
                     self.decoder_prompt_encoder.length
                 )
+                #the original embedding module might be changed into new one
+                self.decoder_original_embedding = self.underlying_model.decoder.embed_tokens
             self.decoder_prompt_encoder.dump_embedding(
                 self.decoder_original_embedding.weight)
 
